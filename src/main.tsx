@@ -9,6 +9,7 @@ import NotasFiscais from './pages/NotasFiscais.tsx'
 import Carrinhos from './pages/Carrinhos.tsx'
 import CarrinhoNotas from './pages/CarrinhoNotas.tsx'
 import App from './App.tsx'
+import { NotifyProvider } from './context/NotifyContext.tsx'
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,9 @@ const router = createBrowserRouter([
 ])
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <NotifyProvider>
+      <RouterProvider router={router} />
+    </NotifyProvider>
+    
   </StrictMode>,
 )

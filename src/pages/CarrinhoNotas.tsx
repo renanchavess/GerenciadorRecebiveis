@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Alert, Button, Col, Container, Modal, Row, Table } from "react-bootstrap";
+import { Button, Col, Container, Modal, Row, Table } from "react-bootstrap";
 import NotaFiscal from "../models/NotaFiscal";
 import NotaFiscalService from "../services/NotaFiscalService";
 import CarrinhoService from "../services/CarrinhoService";
 import { useNavigate } from "react-router-dom";
 import Carrinho from "../models/Carrinho";
-import AlertComponent from "../components/AlertComponent";
+import { useContext } from "react";
+import { NotifyContext } from "../context/NotifyContext";
 
 function CarrinhoNotas() {
     const [carrinho, setCarrinho] = useState<Carrinho>(new Carrinho(0, 0, null, false));
@@ -17,12 +18,11 @@ function CarrinhoNotas() {
     const [empresaId, setEmpresaId] = useState<number | null>(null);
     const [total, setTotal] = useState(0);
     const [onlyRead, setOnlyRead] = useState(false);
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-    const [alertType, setAlertType] = useState('');
     const notaFiscalService = new NotaFiscalService();
     const carrinhoService = new CarrinhoService();
     const navigate = useNavigate();
+    const { notification } = useContext(NotifyContext);
+
 
     useEffect(() => {
         const id = new URLSearchParams(window.location.search).get('id');
@@ -59,7 +59,7 @@ function CarrinhoNotas() {
         const data = await result.json();
 
         if (!result.ok) {
-            alertaPopup(data.Message, 'danger');
+            notification(data.Message, 'error')
         }
 
         getData();
@@ -85,7 +85,7 @@ function CarrinhoNotas() {
             } else {
                 
                 const error:any = await result.json();
-                alertaPopup(error.Message, 'danger');
+                notification(error.Message, 'error')
             }
 
             const carrinho = await carrinhoService.getCarrinho(carrinhoId);
@@ -93,13 +93,6 @@ function CarrinhoNotas() {
             getData();
         }
     };
-
-    const alertaPopup = (message: string, tipo: string) => {
-        setAlertType(tipo);
-        setAlertMessage(message);        
-        setShowAlert(true);
-    }
-
 
     const handleCloseCheckoutModal = () => setShowCheckoutModal(false);
 
@@ -117,12 +110,6 @@ function CarrinhoNotas() {
 
     return (        
         <Container className="d-flex flex-column align-items-center">
-            <AlertComponent
-                variant={alertType}
-                message={alertMessage}
-                show={showAlert}
-                onClose={() => setShowAlert(false)}
-            />
             <Row className="w-100">
                 <Col md={{span: 8, offset: 2}} sm={12}>
                     <h1>Carrinho de Compras</h1>            

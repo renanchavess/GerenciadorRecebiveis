@@ -3,7 +3,8 @@ import { Empresa as EmpresaModel, getRamoName, Ramo } from "../models/Empresa";
 import { useEffect, useState } from "react";
 import EmpresaService from "../services/EmpresaService";
 import { useNavigate } from "react-router-dom";
-import AlertComponent from "../components/AlertComponent";
+import { useContext } from "react";
+import { NotifyContext } from "../context/NotifyContext";
 
 function Empresas() {
     const [empresas, setEmpresas] = useState<EmpresaModel[]>([]);
@@ -12,9 +13,7 @@ function Empresas() {
     const [errors, setErrors] = useState<{ nome?: string, cnpj?: string, faturamento?: string }>({});
     const navigate = useNavigate();
     const empresaService = new EmpresaService();
-    const [showAlert, setShowAlert] = useState(false);
-    const [alertMessage, setAlertMessage] = useState('');
-    const [alertType, setAlertType] = useState('');
+    const { notification } = useContext(NotifyContext);
 
     useEffect(() => {
         empresaService.getEmpresas().then(empresas => setEmpresas(empresas));
@@ -61,15 +60,9 @@ function Empresas() {
             empresaService.getEmpresas().then(empresas => setEmpresas(empresas));
             handleCloseModal();
         } else {
-            alertaPopup(data.Message, 'danger')
+            notification(data.Message, 'error')
         }
     };
-
-    const alertaPopup = (message: string, tipo: string) => {
-        setAlertType(tipo);
-        setAlertMessage(message);        
-        setShowAlert(true);
-    }
 
     return (
         <Container>
@@ -123,12 +116,6 @@ function Empresas() {
             }
 
             <Modal show={showModal} onHide={handleCloseModal}>
-                <AlertComponent
-                    variant={alertType}
-                    message={alertMessage}
-                    show={showAlert}
-                    onClose={() => setShowAlert(false)}
-                />
                 <Modal.Header closeButton>
                     <Modal.Title>Cadastro de Empresa</Modal.Title>
                 </Modal.Header>

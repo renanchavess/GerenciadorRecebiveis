@@ -1,8 +1,0 @@
-.alert-fixed {
-    display: flex;
-    align-items: center;
-    position: fixed; 
-    bottom: 20px;
-    left: 20px;
-    z-index: 9999;
-}
