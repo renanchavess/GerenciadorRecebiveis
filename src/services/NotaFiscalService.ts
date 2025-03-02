@@ -17,7 +17,7 @@ export default class NotaFiscalService {
                 notaFiscal.empresa_id,
                 notaFiscal.carrinho_id)
         });
-
+        console.log(notasFiscais);
         return notasFiscais;
     }
 

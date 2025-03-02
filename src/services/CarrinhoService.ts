@@ -33,7 +33,7 @@ export default class CarrinhoService {
         
         if (response.notas_fiscais) {
             notasFiscais = response.notas_fiscais.map((notaFiscal: any) => {
-                return new NotaFiscal(notaFiscal.id, notaFiscal.numero, notaFiscal.valor, new Date(notaFiscal.data), notaFiscal.empresa_id, notaFiscal.carrinho_id)
+                return new NotaFiscal(notaFiscal.id, notaFiscal.numero, notaFiscal.valor, new Date(notaFiscal.data_vencimento), notaFiscal.empresa_id, notaFiscal.carrinho_id)
             });
         }
 
@@ -54,7 +54,7 @@ export default class CarrinhoService {
             .then(response => response.json())
     }
 
-    async checkoutCarrinho(carrinhoId: number) {
+    async checkoutCarrinho(carrinhoId: number): Promise<Response> {
         return await fetch(this.URL_BASE + `carrinho/${carrinhoId}/checkout`, {
             method: 'PATCH',
             headers: {
@@ -63,8 +63,8 @@ export default class CarrinhoService {
         })            
     }
 
-    async adicionarNotaFiscal(carrinhoId: number, notaFiscalId: number) {
-        await fetch(this.URL_BASE + `carrinho/${carrinhoId}/adicionarNotaFiscal`, {
+    async adicionarNotaFiscal(carrinhoId: number, notaFiscalId: number): Promise<Response> {
+       return await fetch(this.URL_BASE + `carrinho/${carrinhoId}/adicionarNotaFiscal`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -75,8 +75,8 @@ export default class CarrinhoService {
         })
     }
 
-    async removeNotaFiscal(carrinhoId: number, notaFiscalId: number) {
-        await fetch(this.URL_BASE + `carrinho/${carrinhoId}/removerNotaFiscal`, {
+    async removeNotaFiscal(carrinhoId: number, notaFiscalId: number): Promise<boolean> {
+        const result = await fetch(this.URL_BASE + `carrinho/${carrinhoId}/removerNotaFiscal`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -85,5 +85,7 @@ export default class CarrinhoService {
                 id: notaFiscalId
             })
         })
+
+        return result.status === 200;
     }
 }

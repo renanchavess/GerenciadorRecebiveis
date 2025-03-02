@@ -1,18 +1,22 @@
 import { Button, Container, Form, Modal, Table } from "react-bootstrap";
 import { Empresa as EmpresaModel, getRamoName, Ramo } from "../models/Empresa";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import EmpresaService from "../services/EmpresaService";
 import { useNavigate } from "react-router-dom";
+import AlertComponent from "../components/AlertComponent";
 
 function Empresas() {
-
     const [empresas, setEmpresas] = useState<EmpresaModel[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [newEmpresa, setNewEmpresa] = useState<EmpresaModel>({ id: 0, nome: '', cnpj: '', faturamento: 0, ramo: Ramo.Servico });
+    const [errors, setErrors] = useState<{ nome?: string, cnpj?: string, faturamento?: string }>({});
     const navigate = useNavigate();
+    const empresaService = new EmpresaService();
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState('');
 
     useEffect(() => {
-        const empresaService = new EmpresaService();
         empresaService.getEmpresas().then(empresas => setEmpresas(empresas));
     }, []);
 
@@ -25,22 +29,54 @@ function Empresas() {
     };
 
     const handleRamoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setNewEmpresa({ ...newEmpresa, ramo: parseInt(e.target.value)});
+        setNewEmpresa({ ...newEmpresa, ramo: parseInt(e.target.value) });
+    };
+
+    const validate = () => {
+        const errors: { nome?: string, cnpj?: string, faturamento?: string } = {};
+        if (!newEmpresa.nome || newEmpresa.nome.length < 2) {
+            errors.nome = 'Nome é obrigatório e deve ter pelo menos 2 caracteres.';
+        }
+        if (!newEmpresa.cnpj || newEmpresa.cnpj.length !== 18) {
+            errors.cnpj = 'CNPJ é obrigatório e deve ter exatamente 18 caracteres.';
+        }
+        if (!newEmpresa.faturamento || newEmpresa.faturamento <= 0) {
+            errors.faturamento = 'Faturamento é obrigatório e deve ser maior que zero.';
+        }
+        return errors;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const createdEmpresa = await new EmpresaService().createEmpresa(newEmpresa);
-        setEmpresas([...empresas, createdEmpresa]);
-        handleCloseModal();
+        const validationErrors = validate();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
+        const result = await empresaService.createEmpresa(newEmpresa);
+        const data = await result.json();
+
+        if (result.status === 200 || result.status === 201) {
+            empresaService.getEmpresas().then(empresas => setEmpresas(empresas));
+            handleCloseModal();
+        } else {
+            alertaPopup(data.Message, 'danger')
+        }
     };
-            
+
+    const alertaPopup = (message: string, tipo: string) => {
+        setAlertType(tipo);
+        setAlertMessage(message);        
+        setShowAlert(true);
+    }
+
     return (
         <Container>
             <h1>Empresas</h1>
-            <Button className="my-3" variant="success" onClick={handleShowModal}>Cadastro</Button>
+            <Button className="my-3" variant="success" onClick={handleShowModal}>Registrar Empresa</Button>
             {
-                empresas.length === 0 ? <></> :
+                empresas.length === 0 ? <p className="registros-vazio">Nenhuma empresa registrada.</p> :
                 <div className="table-overflow">
                     <Table striped bordered hover className="table-fixed">
                         <thead>
@@ -61,7 +97,7 @@ function Empresas() {
                                         <td>{empresa.id}</td>
                                         <td>{empresa.nome}</td>
                                         <td>{empresa.cnpj}</td>
-                                        <td>R$ {empresa.faturamento}</td>
+                                        <td>R$ {empresa.faturamento.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                         <td>{getRamoName(empresa.ramo)}</td>
                                         <td>
                                             <Button
@@ -84,10 +120,15 @@ function Empresas() {
                         </tbody>
                     </Table>
                 </div>
-                
             }
 
             <Modal show={showModal} onHide={handleCloseModal}>
+                <AlertComponent
+                    variant={alertType}
+                    message={alertMessage}
+                    show={showAlert}
+                    onClose={() => setShowAlert(false)}
+                />
                 <Modal.Header closeButton>
                     <Modal.Title>Cadastro de Empresa</Modal.Title>
                 </Modal.Header>
@@ -100,8 +141,12 @@ function Empresas() {
                                 name="nome"
                                 value={newEmpresa.nome}
                                 onChange={handleInputChange}
+                                isInvalid={!!errors.nome}
                                 required
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {errors.nome}
+                            </Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group controlId="formCnpj" className="mt-3">
                             <Form.Label>CNPJ</Form.Label>
@@ -110,8 +155,12 @@ function Empresas() {
                                 name="cnpj"
                                 value={newEmpresa.cnpj}
                                 onChange={handleInputChange}
+                                isInvalid={!!errors.cnpj}
                                 required
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {errors.cnpj}
+                            </Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group controlId="formFaturamento" className="mt-3">
                             <Form.Label>Faturamento</Form.Label>
@@ -120,7 +169,12 @@ function Empresas() {
                                 name="faturamento"
                                 value={newEmpresa.faturamento}
                                 onChange={handleInputChange}
-                        />
+                                isInvalid={!!errors.faturamento}
+                                required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                                {errors.faturamento}
+                            </Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group controlId="formRamo" className="mt-3">
                             <Form.Label className="mx-3">Ramo: </Form.Label>
@@ -132,7 +186,7 @@ function Empresas() {
                                 value={Ramo.Produto}
                                 label={getRamoName(Ramo.Produto)}
                                 checked={newEmpresa.ramo === Ramo.Produto}                                
-                                onChange={handleRamoChange}
+                                onChange={event => handleRamoChange(event)}
                                 required
                             />
                             <Form.Check
@@ -142,8 +196,8 @@ function Empresas() {
                                 name="ramo"
                                 value={Ramo.Servico}
                                 label={getRamoName(Ramo.Servico)}
-                                checked={newEmpresa.ramo === Ramo.Produto}                                
-                                onChange={handleRamoChange}
+                                checked={newEmpresa.ramo === Ramo.Servico}
+                                onChange={event => handleRamoChange(event)}
                                 required
                             />
                         </Form.Group>
@@ -153,7 +207,6 @@ function Empresas() {
                     </Form>
                 </Modal.Body>
             </Modal>
-            
         </Container>
     );
 }

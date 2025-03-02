@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Button, Col, Container, Modal, Row, Table } from "react-bootstrap";
+import { Alert, Button, Col, Container, Modal, Row, Table } from "react-bootstrap";
 import NotaFiscal from "../models/NotaFiscal";
 import NotaFiscalService from "../services/NotaFiscalService";
 import CarrinhoService from "../services/CarrinhoService";
 import { useNavigate } from "react-router-dom";
 import Carrinho from "../models/Carrinho";
+import AlertComponent from "../components/AlertComponent";
 
 function CarrinhoNotas() {
     const [carrinho, setCarrinho] = useState<Carrinho>(new Carrinho(0, 0, null, false));
@@ -16,6 +17,9 @@ function CarrinhoNotas() {
     const [empresaId, setEmpresaId] = useState<number | null>(null);
     const [total, setTotal] = useState(0);
     const [onlyRead, setOnlyRead] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState('');
+    const [alertType, setAlertType] = useState('');
     const notaFiscalService = new NotaFiscalService();
     const carrinhoService = new CarrinhoService();
     const navigate = useNavigate();
@@ -51,15 +55,19 @@ function CarrinhoNotas() {
     const handleCloseModal = () => setShowModal(false);
 
     const handleAddNotaFiscal = async (notaFiscalId: number) => {
-        if (carrinhoId !== null) {
-            await carrinhoService.adicionarNotaFiscal(carrinhoId, notaFiscalId);
-            getData();            
+        const result = await carrinhoService.adicionarNotaFiscal(carrinhoId, notaFiscalId);
+        const data = await result.json();
+
+        if (!result.ok) {
+            alertaPopup(data.Message, 'danger');
         }
+
+        getData();
     };
 
     const handleRemoveNotaFiscal = async (notaFiscalId: number) => {
         if (carrinhoId !== null) {
-            await carrinhoService.removeNotaFiscal(carrinhoId,notaFiscalId);  
+            await carrinhoService.removeNotaFiscal(carrinhoId, notaFiscalId);            
             getData();
         }
     };
@@ -71,18 +79,27 @@ function CarrinhoNotas() {
             if (result.ok) {
                 const checkoutData = await result.json();
                 console.log(checkoutData);
-                setCheckoutData(checkoutData);
+                setCheckoutData(checkoutData);''
                 setShowCheckoutModal(true);
                 getData();
+            } else {
+                
+                const error:any = await result.json();
+                alertaPopup(error.Message, 'danger');
             }
 
             const carrinho = await carrinhoService.getCarrinho(carrinhoId);
             setCarrinho(carrinho);
             getData();
-
-            
         }
     };
+
+    const alertaPopup = (message: string, tipo: string) => {
+        setAlertType(tipo);
+        setAlertMessage(message);        
+        setShowAlert(true);
+    }
+
 
     const handleCloseCheckoutModal = () => setShowCheckoutModal(false);
 
@@ -100,10 +117,16 @@ function CarrinhoNotas() {
 
     return (        
         <Container className="d-flex flex-column align-items-center">
+            <AlertComponent
+                variant={alertType}
+                message={alertMessage}
+                show={showAlert}
+                onClose={() => setShowAlert(false)}
+            />
             <Row className="w-100">
                 <Col md={{span: 8, offset: 2}} sm={12}>
                     <h1>Carrinho de Compras</h1>            
-                    <p>Total: R$ {total.toFixed(2)}</p>
+                    
                     <div className="d-flex justify-content-between w-100">
                         {
                             !onlyRead &&
@@ -127,7 +150,7 @@ function CarrinhoNotas() {
                     </div>
 
                     {
-                        carrinho.notasFiscais ? 
+                        total > 0 ? 
                         <Table striped bordered hover>
                             <thead>
                                 <tr>
@@ -143,8 +166,8 @@ function CarrinhoNotas() {
                                     <tr key={nota.id}>
                                         <td>{nota.id}</td>
                                         <td>{nota.numero}</td>
-                                        <td>R$ {nota.valor.toFixed(2)}</td>
-                                        <td>{nota.data.toLocaleDateString()}</td>
+                                        <td>R$ {nota.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                        <td>{nota.data.toLocaleString().split(',')[0]}</td>
                                         <td>
                                             <Button
                                                 disabled={onlyRead}                                  
@@ -156,8 +179,14 @@ function CarrinhoNotas() {
                                     </tr>
                                 ))}
                             </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colSpan={1}><strong>Total</strong></td>
+                                    <td colSpan={4}><strong>R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                                </tr>
+                            </tfoot>
                         </Table>
-                        : <p>Nenhuma nota fiscal adicionada</p>
+                        : <p className="registros-vazio">Nenhuma nota fiscal adicionada</p>
                     }
                 </Col>
             </Row>
@@ -167,34 +196,41 @@ function CarrinhoNotas() {
                     <Modal.Title>Adicionar Nota Fiscal</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Table striped bordered hover>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Número</th>
-                                <th>Valor</th>
-                                <th>Data</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {allNotasFiscais.map(nota => {
-                                if (nota.carrinhoId === null) {
-                                    return (
-                                        <tr key={nota.id}>
-                                            <td>{nota.id}</td>
-                                            <td>{nota.numero}</td>
-                                            <td>R$ {nota.valor.toFixed(2)}</td>
-                                            <td>{nota.data.toLocaleDateString()}</td>
-                                            <td>
-                                                <Button variant="success" onClick={() => handleAddNotaFiscal(nota.id)}>Adicionar</Button>
-                                            </td>
-                                        </tr>
-                                    );
-                                }
-                            })}
-                        </tbody>
-                    </Table>
+                    {
+                         (allNotasFiscais.filter(nota => nota.carrinhoId === null)).length === 0 ?
+                         <p className="registros-vazio">Nenhuma nota fiscal disponível</p> :
+                         <Table striped bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Número</th>
+                                    <th>Valor</th>
+                                    <th>Data</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {                                
+                                allNotasFiscais.map(nota => {
+                                    if (nota.carrinhoId === null) {
+                                        return (
+                                            <tr key={nota.id}>
+                                                <td>{nota.id}</td>
+                                                <td>{nota.numero}</td>
+                                                <td>R$ {nota.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                                <td>{nota.data.toLocaleDateString()}</td>
+                                                <td>
+                                                    <Button variant="success" onClick={() => handleAddNotaFiscal(nota.id)}>Adicionar</Button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }
+                                })
+                            }
+                            </tbody>                            
+                        </Table>
+                    }
+                    
                 </Modal.Body>
             </Modal>
 

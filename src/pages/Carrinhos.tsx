@@ -37,7 +37,7 @@ function Carrinhos() {
             <h1>Carrinhos</h1>
             <Button className="my-3" variant="success" onClick={handleCreateCarrinho}>Novo Carrinho</Button>
             {
-                carrinhos.length === 0 ? <></> :
+                carrinhos.length === 0 ? <h3>Nenhum carrinho registrado.</h3> :
                 <Table striped bordered hover>
                     <thead>
                         <tr>
@@ -56,12 +56,18 @@ function Carrinhos() {
                                 <td>R$ 
                                     {
                                         carrinho.notasFiscais ? 
-                                        carrinho.notasFiscais.reduce((acc, nota) => acc + nota.valor, 0) : 0
+                                        carrinho.notasFiscais.reduce((acc, nota) => acc + nota.valor, 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2})
+                                        : 0
                                     }
                                 </td>
                                 <td>{carrinho.checkout ? 'SIM' : 'NÃO'}</td>
                                 <td>
-                                    <Button variant="primary" onClick={() => navigate(`/carrinho/notasfiscais?id=${carrinho.id}&empresaId=${empresa.id}`)}>Ver</Button>
+                                    <Button
+                                        className="m-2 btn-sm btn-table-action"
+                                        variant="primary" 
+                                        onClick={() => navigate(`/carrinho/notasfiscais?id=${carrinho.id}&empresaId=${empresa.id}`)}>
+                                            Ver
+                                    </Button>
                                 </td>
                             </tr>
                         ))}

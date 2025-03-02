@@ -17,14 +17,14 @@ class EmpresaService {
     }
 
     async getEmpresa(id: number): Promise<Empresa> {
-        const response = await fetch(this.URL_BASE+`Empresa/${id}`)
+        const response = await fetch(this.URL_BASE+`empresa/${id}`)
             .then(response => response.json())
         
         return new Empresa(response.id, response.nome, response.cnpj, response.ramo)
     }
 
     async createEmpresa(empresa: Empresa) {
-        return fetch(this.URL_BASE + 'Empresas', {
+        return fetch(this.URL_BASE + 'empresa', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -32,10 +32,10 @@ class EmpresaService {
             body: JSON.stringify({
                 nome: empresa.nome,
                 cnpj: empresa.cnpj,
-                ramo: empresa.ramo
+                ramo: empresa.ramo,
+                faturamento: empresa.faturamento
             })
         })
-            .then(response => response.json())
     }    
 }
 
